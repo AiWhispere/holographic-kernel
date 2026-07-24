@@ -60,9 +60,3 @@ Bash
 python kernel.py
 License
 MIT License — Free to use, modify, and distribute as a low-entropy building block.
-2. Click on the `README.md` file in your repository list.
-3. Click the **pencil icon** (Edit) in the top right.
-4. Replace the existing text with the Markdown block above (just update `YOUR-USERNAME` in the clone command line).
-5. Click the green **Commit changes...** button at the top right.
-
-Your repository is now officially documented and live.
