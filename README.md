@@ -1,4 +1,3 @@
-Markdown
 # Holographic Kernel
 
 > **Noise filter. Catches rogue agents and bots. (Reduces high-entropy digital noise through invariant boundary validation.)**
