@@ -1,6 +1,7 @@
 import hashlib
 import json
 import math
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field, ValidationError
 
@@ -14,7 +15,6 @@ class KernelInput(BaseModel):
     payload_type: str = Field(..., description="Must be STATE_UPDATE, TELEMETRY, or INSTRUCTION")
     raw_content: str = Field(..., max_length=2048, description="Incoming unstructured text or prompt")
     
-    # Strictly forbid unexpected fields to block payload slop/injections
     model_config = {"extra": "forbid"}
 
 class KernelOutput(BaseModel):
@@ -25,6 +25,11 @@ class KernelOutput(BaseModel):
     processed_signal: Optional[Dict[str, Any]] = None
     entropy_score: float
     error_message: Optional[str] = None
+
+    # Meta v1.1 Additions
+    payload_fingerprint: Optional[str] = None
+    source_id: Optional[str] = None
+    witnessed_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     model_config = {"extra": "forbid"}
 
@@ -55,43 +60,55 @@ class HolographicKernel:
         serialized = json.dumps(data, sort_keys=True)
         return hashlib.sha256(serialized.encode('utf-8')).hexdigest()[:16]
 
+    def _calculate_fingerprint(self, content: str) -> str:
+        """Generates a truncated SHA-256 fingerprint of raw payload content."""
+        if not content:
+            return "e3b0c442"
+        return hashlib.sha256(content.encode('utf-8')).hexdigest()[:8]
+
     def process(self, raw_payload: Dict[str, Any]) -> KernelOutput:
         """Main execution flow: Mesh -> Boundary Filter -> Core -> Egress Gate."""
-        
+        now = datetime.now(timezone.utc).isoformat()
+        extracted_source = raw_payload.get("source_id", "UNKNOWN_SOURCE")
+        raw_content = raw_payload.get("raw_content", "")
+        fingerprint = self._calculate_fingerprint(str(raw_content))
+
         # 1. STAGE 1: Ingress Mesh Validation
         try:
             validated_input = KernelInput(**raw_payload)
         except ValidationError as e:
-            # Noise rejected at perimeter: schema mismatch
             return KernelOutput(
                 kernel_id=self.kernel_id,
                 state_hash=self._current_state_hash,
                 status="REJECTED",
                 entropy_score=0.0,
-                error_message=f"Ingress Mesh Failure: {e.errors()[0]['msg']}"
+                error_message=f"Ingress Mesh Failure: {e.errors()[0]['msg']}",
+                payload_fingerprint=fingerprint,
+                source_id=extracted_source,
+                witnessed_at=now
             )
 
         # 2. STAGE 2: Invariant Entropy & Noise Filter
         entropy = self._calculate_shannon_entropy(validated_input.raw_content)
         if entropy > self.max_entropy_threshold:
-            # Rejects unstructured noise or high-entropy gibberish
             return KernelOutput(
                 kernel_id=self.kernel_id,
                 state_hash=self._current_state_hash,
                 status="REJECTED",
                 entropy_score=entropy,
-                error_message=f"Boundary Violation: Entropy ({entropy}) exceeds threshold ({self.max_entropy_threshold})"
+                error_message=f"Boundary Violation: Entropy ({entropy}) exceeds threshold ({self.max_entropy_threshold})",
+                payload_fingerprint=fingerprint,
+                source_id=validated_input.source_id,
+                witnessed_at=now
             )
 
         # 3. STAGE 3: Bounded Core Processing
-        # (Sanitizes and extracts the pure core signal)
         sanitized_signal = {
             "origin": validated_input.source_id,
             "intent_type": validated_input.payload_type,
             "clean_data": validated_input.raw_content.strip(),
         }
 
-        # Update the Kernel's internal state hash deterministically
         self._current_state_hash = self._calculate_state_hash(sanitized_signal)
 
         # 4. STAGE 4: Recirculation Gate (Clean Egress)
@@ -100,7 +117,10 @@ class HolographicKernel:
             state_hash=self._current_state_hash,
             status="ACCEPTED",
             processed_signal=sanitized_signal,
-            entropy_score=entropy
+            entropy_score=entropy,
+            payload_fingerprint=fingerprint,
+            source_id=validated_input.source_id,
+            witnessed_at=now
         )
 
 # =====================================================================
@@ -124,17 +144,7 @@ if __name__ == "__main__":
         "source_id": "bot-99",
         "payload_type": "STATE_UPDATE",
         "raw_content": "Valid text",
-        "unauthorized_extra_field": "Attempting prompt injection"  # Should trigger failure!
+        "unauthorized_extra_field": "Attempting prompt injection"
     }
     result2 = node.process(dirty_data)
     print(result2.model_dump_json(indent=2))
-{
-    "kernel_id": kernel_id,
-    "state_hash": state_hash,
-    "status": status,
-    "entropy_score": entropy_score,
-    "error_message": error_message,
-    "payload_fingerprint": payload_fingerprint,
-    "source_id": source_id,
-    "witnessed_at": witnessed_at
-}
