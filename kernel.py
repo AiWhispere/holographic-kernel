@@ -128,3 +128,13 @@ if __name__ == "__main__":
     }
     result2 = node.process(dirty_data)
     print(result2.model_dump_json(indent=2))
+{
+    "kernel_id": kernel_id,
+    "state_hash": state_hash,
+    "status": status,
+    "entropy_score": entropy_score,
+    "error_message": error_message,
+    "payload_fingerprint": payload_fingerprint,
+    "source_id": source_id,
+    "witnessed_at": witnessed_at
+}
