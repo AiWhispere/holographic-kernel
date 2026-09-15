@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field, ValidationError
 
 # =====================================================================
-# STAGE 1: INGRESS & EGRESS SCHEMA (v1.2 Structural Mesh)
+# STAGE 1: INGRESS & EGRESS SCHEMA (v1.3 Structural Mesh)
 # =====================================================================
 
 class KernelInput(BaseModel):
@@ -171,26 +171,3 @@ class HolographicKernel:
             remaining_cycles=self.remaining_cycles,
             is_expired=False
         )
-
-# =====================================================================
-# VERIFICATION RUNNER
-# =====================================================================
-
-if __name__ == "__main__":
-    # Test instance initialized with 2 summation cycles
-    flare = HolographicKernel(kernel_id="Flare-Probe-01", max_cycles=2)
-
-    data = {
-        "source_id": "agent-proxy-01",
-        "payload_type": "INSTRUCTION",
-        "raw_content": "Execute boundary sweep."
-    }
-
-    print("--- PASS 1 (Active Cycle) ---")
-    print(flare.process(data).model_dump_json(indent=2))
-
-    print("\n--- PASS 2 (Final Cycle) ---")
-    print(flare.process(data).model_dump_json(indent=2))
-
-    print("\n--- PASS 3 (Expired Flare) ---")
-    print(flare.process(data).model_dump_json(indent=2))
