@@ -1,7 +1,7 @@
-![Transient Intelligence Architecture](Transient%20Intelligence%20Architecture.png)# Holographic Kernel
+# Holographic Kernel
 
 > **(Reduces high-entropy digital noise through invariant boundary validation.)**
-
+![Transient Intelligence Architecture](Transient%20Intelligence%20Architecture.png)
 ---
 
 ## Overview
