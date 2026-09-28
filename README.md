@@ -1,6 +1,6 @@
-# Holographic Kernel
+![Transient Intelligence Architecture](Transient%20Intelligence%20Architecture.png)# Holographic Kernel
 
-> **Noise filter. Traps rogue agents and bots. (Reduces high-entropy digital noise through invariant boundary validation.)**
+> **(Reduces high-entropy digital noise through invariant boundary validation.)**
 
 ---
 
